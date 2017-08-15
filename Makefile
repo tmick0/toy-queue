@@ -1,4 +1,4 @@
-CCFLAGS=-Wall -Wpedantic -Werror -std=c99 -fsanitize=address
+CCFLAGS=-Wall -Wpedantic -Werror -std=c99 -fsanitize=address -D_GNU_SOURCE
 LDFLAGS=-lpthread -lasan
 
 test: test.c queue.o | queue.h

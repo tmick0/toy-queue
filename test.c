@@ -1,10 +1,11 @@
 #include <stdio.h>
+#include <unistd.h>
 
 #include "queue.h"
 
-#define BUFFER_SIZE (4096)
-#define NUM_THREADS (24)
-#define MESSAGES_PER_THREAD (100)
+#define BUFFER_SIZE (getpagesize())
+#define NUM_THREADS (8)
+#define MESSAGES_PER_THREAD (getpagesize() * 2)
 
 void *consumer_loop(void *arg) {
     queue_t *q = (queue_t *) arg;
@@ -29,10 +30,8 @@ void *publisher_loop(void *arg) {
 
 int main(int argc, char *argv[]){
 
-    uint8_t buffer[BUFFER_SIZE];
-
     queue_t q;
-    queue_init(&q, buffer, BUFFER_SIZE);
+    queue_init(&q, BUFFER_SIZE);
 
     pthread_t publisher;
     pthread_t consumers[NUM_THREADS];

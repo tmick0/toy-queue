@@ -11,6 +11,9 @@ typedef struct __queue_t__ {
     uint8_t *buffer;
     size_t size;
     
+    // backing buffer's memfd descriptor
+    int fd;
+    
     // read / write indices
     size_t head;
     size_t tail;
@@ -21,18 +24,15 @@ typedef struct __queue_t__ {
     // sequence number of last written message
     size_t tail_seq;
     
-    // number of bytes readable
-    size_t avail;
-    
     // synchronization primitives
     pthread_cond_t readable;
     pthread_cond_t writeable;
     pthread_mutex_t lock;
 } queue_t;
 
-/** Initialize a blocking queue *q*, backed by the given buffer *b* of size *s*
+/** Initialize a blocking queue *q* of size *s*
  */
-void queue_init(queue_t *q, uint8_t *b, size_t s);
+void queue_init(queue_t *q, size_t s);
 
 /** Destroy the blocking queue *q*
  */
