@@ -61,6 +61,20 @@ void queue_put(queue_t *q, uint8_t *buffer, size_t size) {
     pthread_mutex_unlock(&q->lock);
 }
 
+void queue_peek_header(queue_t const *q, message_t *m) {
+    size_t i;
+    for(i = 0; i < sizeof(message_t); i++){
+        ((uint8_t *) m)[i] = q->buffer[(q->head + i) % q->size];
+    }
+}
+
+void queue_peek_body(queue_t const *q, uint8_t *buffer, size_t len) {
+    size_t i;
+    for(i = 0; i < len; i++) {
+        buffer[i] = q->buffer[(q->head + sizeof(message_t) + i) % q->size];
+    }
+}
+
 size_t queue_get(queue_t *q, uint8_t *buffer, size_t max) {
     pthread_mutex_lock(&q->lock);
     
@@ -74,10 +88,7 @@ size_t queue_get(queue_t *q, uint8_t *buffer, size_t max) {
         }
         
         // read message header
-        size_t i;
-        for(i = 0; i < sizeof(message_t); i++){
-            ((uint8_t *) &m)[i] = q->buffer[(q->head + i) % q->size];
-        }
+        queue_peek_header(q, &m);
         
         // message too long, wait for someone else to consume it
         if(m.len > max){
@@ -87,23 +98,20 @@ size_t queue_get(queue_t *q, uint8_t *buffer, size_t max) {
             continue;
         }
         
-        // we successfully consumed the header, increment the head pointer and proceed
-        q->head = (q->head + i) % q->size;
+        // we successfully consumed the header of a suitable message, so proceed
         break;
     } 
     
     // read message body
-    size_t i;
-    for(i = 0; i < m.len; i++) {
-        buffer[i] = q->buffer[q->head];
-        q->head = (q->head + 1) % q->size;
-    }
+    queue_peek_body(q, buffer, m.len);
     
+    // consume the message
+    q->head = (q->head + m.len + sizeof(message_t)) % q->size;
     q->avail -= m.len + sizeof(message_t);
     q->head_seq++;
     
     pthread_cond_signal(&q->writeable);
     pthread_mutex_unlock(&q->lock);
     
-    return i;
+    return m.len;
 }
