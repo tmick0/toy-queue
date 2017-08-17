@@ -64,8 +64,13 @@ void queue_init(queue_t *q, size_t s) {
         queue_error_errno("Could not set size of anonymous file");
     }
     
+    // Ask mmap for a good address
+    if((q->buffer = mmap(NULL, 2 * s, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) == MAP_FAILED){
+        queue_error_errno("Could not allocate virtual memory");
+    }
+    
     // Mmap first region
-    if((q->buffer = mmap(NULL, s, PROT_READ | PROT_WRITE, MAP_SHARED, q->fd, 0)) == MAP_FAILED){
+    if(mmap(q->buffer, s, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, q->fd, 0) == MAP_FAILED){
         queue_error_errno("Could not map buffer into virtual memory");
     }
     
