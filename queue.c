@@ -52,31 +52,26 @@ void queue_init(queue_t *q, size_t s) {
     // Check that the requested size is a multiple of a page. If it isn't, we're in trouble.
     if(s % getpagesize() != 0) {
         queue_error("Requested size (%lu) is not a multiple of the page size (%d)", s, getpagesize());
-        abort();
     }
     
     // Create an anonymous file backed by memory
     if((q->fd = memfd_create("queue_region", 0)) == -1){
         queue_error_errno("Could not obtain anonymous file");
-        abort();
     }
     
     // Set buffer size
     if(ftruncate(q->fd, s) != 0){
         queue_error_errno("Could not set size of anonymous file");
-        abort();
     }
     
     // Mmap first region
     if((q->buffer = mmap(NULL, s, PROT_READ | PROT_WRITE, MAP_SHARED, q->fd, 0)) == MAP_FAILED){
         queue_error_errno("Could not map buffer into virtual memory");
-        abort();
     }
     
     // Mmap second region, with exact address
     if(mmap(q->buffer + s, s, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, q->fd, 0) == MAP_FAILED){
         queue_error_errno("Could not map buffer into virtual memory");
-        abort();
     }
     
     // Initialize synchronization primitives
