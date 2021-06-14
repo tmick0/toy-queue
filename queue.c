@@ -16,9 +16,11 @@
 /** Convenience wrapper around memfd_create syscall, because apparently this is
   * so scary that glibc doesn't provide it...
   */
+#if __GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 27)
 static inline int memfd_create(const char *name, unsigned int flags) {
     return syscall(__NR_memfd_create, name, flags);
 }
+#endif
 
 /** Convenience wrappers for erroring out
   */
